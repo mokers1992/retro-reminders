@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Reminders Survey</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --warning: #d97706;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--primary); color: white; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 1.2rem; font-weight: 600; }
+  header .team-name { font-size: 0.85rem; opacity: 0.85; }
+  .container { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+  .card .reminder-text { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; line-height: 1.4; }
+  .vote-row { display: flex; flex-wrap: wrap; gap: 20px; }
+  .vote-group { flex: 1; min-width: 160px; }
+  .vote-group label { display: block; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 8px; }
+  .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn-opt { border: 1.5px solid var(--border); background: white; border-radius: 6px; padding: 6px 12px; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; color: var(--text); }
+  .btn-opt:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-opt.selected-priority { background: var(--primary); border-color: var(--primary); color: white; }
+  .btn-opt.selected-high { background: var(--success); border-color: var(--success); color: white; }
+  .btn-opt.selected-medium { background: var(--warning); border-color: var(--warning); color: white; }
+  .btn-opt.selected-low { background: var(--danger); border-color: var(--danger); color: white; }
+  .btn-opt.selected-remove { background: var(--danger); border-color: var(--danger); color: white; }
+  .btn-opt.selected-keep { background: var(--success); border-color: var(--success); color: white; }
+  btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: var(--radius); border: none; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  button.primary { background: var(--primary); color: white; padding: 10px 20px; border-radius: var(--radius); border: none; font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+  button.primary:hover { background: var(--primary-dark); }
+  button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary { background: white; color: var(--text); padding: 10px 20px; border-radius: var(--radius); border: 1.5px solid var(--border); font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+  button.secondary:hover { border-color: var(--primary); color: var(--primary); }
+  button.danger { background: var(--danger); color: white; padding: 8px 16px; border-radius: var(--radius); border: none; font-size: 0.85rem; cursor: pointer; }
+  button.success { background: var(--success); color: white; padding: 10px 20px; border-radius: var(--radius); border: none; font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: var(--radius); padding: 24px; width: 100%; max-width: 420px; }
+  .modal h3 { margin-bottom: 16px; }
+  .modal input, .modal textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; margin-bottom: 12px; font-family: inherit; }
+  .modal textarea { min-height: 80px; resize: vertical; }
+  .modal .row { display: flex; gap: 10px; }
+  .modal .row > div { flex: 1; }
+  .modal select { width: 100%; border: 1.5px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; background: white; }
+  .modal label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+  .setup-box { background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: var(--radius); padding: 16px; margin-bottom: 20px; }
+  .setup-box h3 { color: var(--primary); margin-bottom: 8px; font-size: 0.95rem; }
+  .setup-box input { width: 100%; border: 1.5px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; margin-top: 8px; }
+  .setup-box p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+  .reminder-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .reminder-item:last-child { border-bottom: none; }
+  .reminder-meta { font-size: 0.78rem; color: var(--muted); margin-top: 4px; display: flex; gap: 10px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+  .badge-p { background: #dbeafe; color: #1d4ed8; }
+  .badge-high { background: #dcfce7; color: #15803d; }
+  .badge-medium { background: #fef3c7; color: #b45309; }
+  .badge-low { background: #fee2e2; color: #b91c1c; }
+  .reminder-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-sm { padding: 5px 10px; border-radius: 5px; border: 1.5px solid var(--border); background: white; font-size: 0.8rem; cursor: pointer; }
+  .btn-sm:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-sm.del:hover { border-color: var(--danger); color: var(--danger); }
+  .results-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .results-table th { text-align: left; padding: 8px 12px; background: var(--bg); border-bottom: 2px solid var(--border); font-size: 0.78rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; }
+  .results-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .results-table tr:last-child td { border-bottom: none; }
+  .conf-bars { display: flex; flex-direction: column; gap: 3px; }
+  .conf-bar-row { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; }
+  .conf-bar-row span:first-child { width: 42px; color: var(--muted); }
+  .conf-bar { height: 8px; border-radius: 4px; min-width: 4px; }
+  .conf-bar.high { background: var(--success); }
+  .conf-bar.medium { background: var(--warning); }
+  .conf-bar.low { background: var(--danger); }
+  .conf-bar-row .count { color: var(--muted); }
+  .alert { padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px; font-size: 0.9rem; }
+  .alert-error { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+  .alert-success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+  .alert-info { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .nav-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+  .nav-tab { padding: 8px 16px; border: none; background: none; cursor: pointer; font-size: 0.9rem; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -2px; font-weight: 500; }
+  .nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .empty-state { text-align: center; padding: 40px; color: var(--muted); }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .remove-flag { font-size: 0.78rem; color: var(--danger); font-weight: 600; }
+  .progress { font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; }
+  .progress span { color: var(--primary); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <h1>🔁 Retro Reminders</h1>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="team-name" id="headerTeamName"></span>
+    <button class="secondary" id="adminToggleBtn" onclick="showAdminLogin()" style="padding:6px 14px;font-size:0.8rem;">Admin</button>
+  </div>
+</header>
+
+<!-- SURVEY SCREEN -->
+<div id="surveyScreen" class="screen active">
+  <div class="container">
+    <div id="surveyAlert"></div>
+    <div id="surveyLoading" class="alert alert-info">Loading reminders...</div>
+    <div id="surveyContent" style="display:none;">
+      <p class="progress">Please vote on each reminder below. <span id="progressText"></span></p>
+      <div id="remindersList"></div>
+      <div class="actions">
+        <button class="primary" id="submitBtn" onclick="submitSurvey()">Submit Votes</button>
+      </div>
+    </div>
+    <div id="surveyDone" style="display:none;" class="alert alert-success">
+      ✅ Thanks! Your votes have been submitted. See you at the retro!
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN SCREEN -->
+<div id="adminScreen" class="screen">
+  <div class="container">
+    <div id="adminAlert"></div>
+    <div class="setup-box" id="setupBox">
+      <h3>⚙️ Google Sheet Configuration</h3>
+      <p>Paste your Google Apps Script Web App URL below. This connects the survey to your team's Google Sheet for data storage.</p>
+      <input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/.../exec" oninput="saveSheetUrl()" />
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('reminders')">Reminders</button>
+      <button class="nav-tab" onclick="switchTab('results')">Results</button>
+    </div>
+
+    <!-- Reminders Tab -->
+    <div id="remindersTab">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:1rem;">Active Reminders</h2>
+        <button class="primary" onclick="openAddModal()">+ Add Reminder</button>
+      </div>
+      <div class="card">
+        <div id="adminRemindersList"><div class="empty-state">No reminders yet. Add one to get started.</div></div>
+      </div>
+      <div class="actions">
+        <button class="secondary" onclick="resetVotes()">🔄 Reset All Votes</button>
+        <button class="secondary" onclick="loadAdmin()">↻ Refresh</button>
+        <button class="secondary" onclick="showScreen('surveyScreen')">👁 Preview Survey</button>
+        <button class="secondary" onclick="adminLogout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- Results Tab -->
+    <div id="resultsTab" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:1rem;">Vote Results</h2>
+        <button class="success" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+      <div class="card" style="overflow-x:auto;">
+        <div id="resultsContent"><div class="empty-state">No results yet.</div></div>
+      </div>
+      <div class="actions">
+        <button class="secondary" onclick="loadResults()">↻ Refresh Results</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <h3>Admin Login</h3>
+    <label>Password</label>
+    <input type="password" id="adminPassword" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')adminLogin()" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 12px;font-size:0.9rem;margin-bottom:12px;" />
+    <div id="loginError" style="color:var(--danger);font-size:0.85rem;margin-bottom:8px;"></div>
+    <div class="modal-actions">
+      <button class="secondary" onclick="closeModal('loginModal')">Cancel</button>
+      <button class="primary" onclick="adminLogin()">Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT REMINDER MODAL -->
+<div class="modal-overlay" id="reminderModal">
+  <div class="modal">
+    <h3 id="modalTitle">Add Reminder</h3>
+    <input type="hidden" id="editingId" />
+    <label>Reminder Text</label>
+    <textarea id="reminderText" placeholder="e.g. Think about edge cases when writing User Story requirements"></textarea>
+    <div class="row">
+      <div>
+        <label>Priority (1-5)</label>
+        <select id="reminderPriority">
+          <option value="1">1 - Lowest</option>
+          <option value="2">2</option>
+          <option value="3" selected>3 - Medium</option>
+          <option value="4">4</option>
+          <option value="5">5 - Highest</option>
+        </select>
+      </div>
+      <div>
+        <label>Confidence</label>
+        <select id="reminderConfidence">
+          <option value="High">High</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:12px;">
+      <button class="secondary" onclick="closeModal('reminderModal')">Cancel</button>
+      <button class="primary" onclick="saveReminder()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const TEAM_NAME = "Blue Team"; // Change this for each team's file
+const ADMIN_PASSWORD = "retro2024"; // Change this for each team's file
+const STORAGE_KEY_URL = "retro_sheet_url_" + TEAM_NAME.replace(/\s/g,'_');
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let reminders = [];
+let votes = {};
+let isAdmin = false;
+let sheetUrl = localStorage.getItem(STORAGE_KEY_URL) || "";
+let resultsData = [];
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  document.getElementById('headerTeamName').textContent = TEAM_NAME;
+  document.title = `Retro Reminders — ${TEAM_NAME}`;
+  if (sheetUrl) document.getElementById('sheetUrl').value = sheetUrl;
+  loadSurvey();
+};
+
+// ── SHEET URL ─────────────────────────────────────────────────────────────────
+function saveSheetUrl() {
+  sheetUrl = document.getElementById('sheetUrl').value.trim();
+  localStorage.setItem(STORAGE_KEY_URL, sheetUrl);
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('remindersTab').style.display = tab === 'reminders' ? 'block' : 'none';
+  document.getElementById('resultsTab').style.display = tab === 'results' ? 'block' : 'none';
+  event.target.classList.add('active');
+  if (tab === 'results') loadResults();
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+function showAdminLogin() {
+  document.getElementById('adminPassword').value = '';
+  document.getElementById('loginError').textContent = '';
+  openModal('loginModal');
+}
+
+function adminLogin() {
+  const pw = document.getElementById('adminPassword').value;
+  if (pw === ADMIN_PASSWORD) {
+    isAdmin = true;
+    closeModal('loginModal');
+    showScreen('adminScreen');
+    loadAdmin();
+  } else {
+    document.getElementById('loginError').textContent = 'Incorrect password.';
+  }
+}
+
+function adminLogout() {
+  isAdmin = false;
+  showScreen('surveyScreen');
+  loadSurvey();
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── API CALLS ─────────────────────────────────────────────────────────────────
+async function apiGet(action, params = {}) {
+  if (!sheetUrl) throw new Error("No Google Sheet URL configured.");
+  const url = new URL(sheetUrl);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error("Request failed: " + res.status);
+  return res.json();
+}
+
+async function apiPost(payload) {
+  if (!sheetUrl) throw new Error("No Google Sheet URL configured.");
+  const res = await fetch(sheetUrl, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("Request failed: " + res.status);
+  return res.json();
+}
+
+// ── SURVEY ────────────────────────────────────────────────────────────────────
+async function loadSurvey() {
+  const loading = document.getElementById('surveyLoading');
+  const content = document.getElementById('surveyContent');
+  loading.style.display = 'block';
+  content.style.display = 'none';
+
+  if (!sheetUrl) {
+    loading.textContent = 'This survey is not yet configured. Please contact your Agile Delivery Manager.';
+    return;
+  }
+
+  try {
+    const data = await apiGet('getReminders');
+    reminders = data.reminders || [];
+    votes = {};
+    loading.style.display = 'none';
+    content.style.display = 'block';
+    renderSurveyReminders();
+  } catch(e) {
+    loading.textContent = 'Unable to load reminders. Please check your connection and try again.';
+  }
+}
+
+function renderSurveyReminders() {
+  const list = document.getElementById('remindersList');
+  document.getElementById('progressText').textContent = `${reminders.length} reminder${reminders.length !== 1 ? 's' : ''} to review.`;
+
+  if (reminders.length === 0) {
+    list.innerHTML = '<div class="empty-state">No reminders to vote on right now.</div>';
+    return;
+  }
+
+  list.innerHTML = reminders.map((r, i) => `
+    <div class="card">
+      <h2>Reminder ${i+1} of ${reminders.length}</h2>
+      <p class="reminder-text">${escHtml(r.text)}</p>
+      <div class="vote-row">
+        <div class="vote-group">
+          <label>Priority</label>
+          <div class="btn-group">
+            ${[1,2,3,4,5].map(p => `<button class="btn-opt" onclick="vote('${r.id}','priority',${p},this)" data-id="${r.id}" data-type="priority" data-val="${p}">${p}</button>`).join('')}
+          </div>
+        </div>
+        <div class="vote-group">
+          <label>Confidence</label>
+          <div class="btn-group">
+            ${['High','Medium','Low'].map(c => `<button class="btn-opt" onclick="vote('${r.id}','confidence','${c}',this)" data-id="${r.id}" data-type="confidence" data-val="${c}">${c}</button>`).join('')}
+          </div>
+        </div>
+        <div class="vote-group">
+          <label>Remove?</label>
+          <div class="btn-group">
+            <button class="btn-opt" onclick="vote('${r.id}','remove','Yes',this)" data-id="${r.id}" data-type="remove" data-val="Yes">Yes</button>
+            <button class="btn-opt" onclick="vote('${r.id}','remove','No',this)" data-id="${r.id}" data-type="remove" data-val="No">No</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function vote(id, type, val, btn) {
+  if (!votes[id]) votes[id] = {};
+  votes[id][type] = val;
+  // Update button styles
+  const btns = document.querySelectorAll(`[data-id="${id}"][data-type="${type}"]`);
+  btns.forEach(b => {
+    b.className = 'btn-opt';
+  });
+  if (type === 'priority') btn.classList.add('selected-priority');
+  else if (type === 'confidence') btn.classList.add('selected-' + val.toLowerCase());
+  else if (type === 'remove' && val === 'Yes') btn.classList.add('selected-remove');
+  else if (type === 'remove' && val === 'No') btn.classList.add('selected-keep');
+}
+
+async function submitSurvey() {
+  // Validate
+  const missing = reminders.filter(r => !votes[r.id] || !votes[r.id].priority || !votes[r.id].confidence || !votes[r.id].remove);
+  if (missing.length > 0) {
+    showAlert('surveyAlert', 'error', `Please vote on all three options for every reminder before submitting. (${missing.length} incomplete)`);
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Submitting...';
+
+  try {
+    const submission = reminders.map(r => ({
+      id: r.id,
+      text: r.text,
+      priority: votes[r.id].priority,
+      confidence: votes[r.id].confidence,
+      remove: votes[r.id].remove
+    }));
+    await apiPost({ action: 'submitVotes', votes: submission });
+    document.getElementById('surveyContent').style.display = 'none';
+    document.getElementById('surveyDone').style.display = 'block';
+  } catch(e) {
+    showAlert('surveyAlert', 'error', 'Submission failed. Please check your connection and try again.');
+    btn.disabled = false;
+    btn.innerHTML = 'Submit Votes';
+  }
+}
+
+// ── ADMIN ─────────────────────────────────────────────────────────────────────
+async function loadAdmin() {
+  if (!sheetUrl) return;
+  try {
+    const data = await apiGet('getReminders');
+    reminders = data.reminders || [];
+    renderAdminReminders();
+  } catch(e) {
+    showAlert('adminAlert', 'error', 'Could not load reminders. Check your Sheet URL.');
+  }
+}
+
+function renderAdminReminders() {
+  const list = document.getElementById('adminRemindersList');
+  if (reminders.length === 0) {
+    list.innerHTML = '<div class="empty-state">No reminders yet. Add one to get started.</div>';
+    return;
+  }
+  list.innerHTML = reminders.map(r => `
+    <div class="reminder-item">
+      <div style="flex:1;">
+        <div>${escHtml(r.text)}</div>
+        <div class="reminder-meta">
+          <span class="badge badge-p">P${r.priority}</span>
+          <span class="badge badge-${r.confidence.toLowerCase()}">${r.confidence}</span>
+        </div>
+      </div>
+      <div class="reminder-actions">
+        <button class="btn-sm" onclick="openEditModal('${r.id}')">Edit</button>
+        <button class="btn-sm del" onclick="deleteReminder('${r.id}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAddModal() {
+  document.getElementById('modalTitle').textContent = 'Add Reminder';
+  document.getElementById('editingId').value = '';
+  document.getElementById('reminderText').value = '';
+  document.getElementById('reminderPriority').value = '3';
+  document.getElementById('reminderConfidence').value = 'Medium';
+  openModal('reminderModal');
+}
+
+function openEditModal(id) {
+  const r = reminders.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('modalTitle').textContent = 'Edit Reminder';
+  document.getElementById('editingId').value = id;
+  document.getElementById('reminderText').value = r.text;
+  document.getElementById('reminderPriority').value = r.priority;
+  document.getElementById('reminderConfidence').value = r.confidence;
+  openModal('reminderModal');
+}
+
+async function saveReminder() {
+  const text = document.getElementById('reminderText').value.trim();
+  const priority = document.getElementById('reminderPriority').value;
+  const confidence = document.getElementById('reminderConfidence').value;
+  const editingId = document.getElementById('editingId').value;
+
+  if (!text) { alert('Please enter reminder text.'); return; }
+
+  try {
+    if (editingId) {
+      await apiPost({ action: 'updateReminder', id: editingId, text, priority, confidence });
+    } else {
+      await apiPost({ action: 'addReminder', text, priority, confidence });
+    }
+    closeModal('reminderModal');
+    await loadAdmin();
+    showAlert('adminAlert', 'success', editingId ? 'Reminder updated.' : 'Reminder added.');
+  } catch(e) {
+    alert('Save failed: ' + e.message);
+  }
+}
+
+async function deleteReminder(id) {
+  if (!confirm('Delete this reminder?')) return;
+  try {
+    await apiPost({ action: 'deleteReminder', id });
+    await loadAdmin();
+    showAlert('adminAlert', 'success', 'Reminder deleted.');
+  } catch(e) {
+    alert('Delete failed: ' + e.message);
+  }
+}
+
+async function resetVotes() {
+  if (!confirm('Reset all votes for this sprint? This cannot be undone.')) return;
+  try {
+    await apiPost({ action: 'resetVotes' });
+    showAlert('adminAlert', 'success', 'All votes have been reset.');
+  } catch(e) {
+    alert('Reset failed: ' + e.message);
+  }
+}
+
+// ── RESULTS ───────────────────────────────────────────────────────────────────
+async function loadResults() {
+  const el = document.getElementById('resultsContent');
+  el.innerHTML = '<div class="empty-state">Loading results...</div>';
+  try {
+    const data = await apiGet('getResults');
+    resultsData = data.results || [];
+    renderResults();
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state">Could not load results.</div>';
+  }
+}
+
+function renderResults() {
+  const el = document.getElementById('resultsContent');
+  if (!resultsData.length) {
+    el.innerHTML = '<div class="empty-state">No votes submitted yet.</div>';
+    return;
+  }
+  const totalRespondents = resultsData[0]?.totalRespondents || 0;
+  el.innerHTML = `
+    <p style="margin-bottom:12px;font-size:0.85rem;color:var(--muted);">Total respondents: <strong>${totalRespondents}</strong></p>
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th style="width:35%">Reminder</th>
+          <th>Avg Priority</th>
+          <th>Confidence</th>
+          <th>Remove Votes</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${resultsData.map(r => {
+          const total = (r.confidence?.High || 0) + (r.confidence?.Medium || 0) + (r.confidence?.Low || 0);
+          const barMax = Math.max(r.confidence?.High || 0, r.confidence?.Medium || 0, r.confidence?.Low || 0, 1);
+          return `
+          <tr>
+            <td>${escHtml(r.text)}</td>
+            <td><strong>${r.avgPriority}</strong> / 5</td>
+            <td>
+              <div class="conf-bars">
+                ${['High','Medium','Low'].map(c => `
+                  <div class="conf-bar-row">
+                    <span>${c}</span>
+                    <div class="conf-bar ${c.toLowerCase()}" style="width:${Math.round(((r.confidence?.[c]||0)/barMax)*80)+4}px"></div>
+                    <span class="count">${r.confidence?.[c] || 0}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </td>
+            <td>${r.removeYes || 0} Yes / ${r.removeNo || 0} No${r.removeYes > r.removeNo ? ' <span class="remove-flag">⚠ Remove?</span>' : ''}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function exportCSV() {
+  if (!resultsData.length) { alert('No results to export.'); return; }
+  const rows = [['Reminder', 'Avg Priority', 'Confidence High', 'Confidence Medium', 'Confidence Low', 'Remove Yes', 'Remove No']];
+  resultsData.forEach(r => {
+    rows.push([
+      `"${r.text.replace(/"/g,'""')}"`,
+      r.avgPriority,
+      r.confidence?.High || 0,
+      r.confidence?.Medium || 0,
+      r.confidence?.Low || 0,
+      r.removeYes || 0,
+      r.removeNo || 0
+    ]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `retro-results-${TEAM_NAME.replace(/\s/g,'-')}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showAlert(containerId, type, msg) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(() => { el.innerHTML = ''; }, 4000);
+}
+</script>
+</body>
+</html>
